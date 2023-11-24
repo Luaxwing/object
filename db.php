@@ -4,8 +4,8 @@ session_start();
 
 class DB{
 
-    
-    protected $dsn= "mysql:host=localhost;charset=utf8;dbname=material" ;
+
+    protected $dsn= "mysql:host=localhost;charset=utf8;dbname=school" ;
     protected $pdo;
     protected $table;
 
@@ -17,12 +17,12 @@ class DB{
     
     
     
-    function all($table = null, $where = '', $other = '')
+    function all( $where = '', $other = '')
     {
-        global $pdo;
-        $sql = "select * from `$table` ";
+        // global $pdo;
+        $sql = "select * from `$this->table` ";
     
-        if (isset($table) && !empty($table)) {
+        if (isset($this->table) && !empty($this->table)) {
     
             if (is_array($where)) {
     
@@ -38,17 +38,18 @@ class DB{
     
             $sql .= $other;
             //echo 'all=>'.$sql;
-            $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+            // $rows = $this->pdo->query($sql)->fetchColumn(PDO::FETCH_CLASS);
+            $rows = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
             return $rows;
         } else {
             echo "錯誤:沒有指定的資料表名稱";
         }
     }
     
-    function total($table, $id)
+    function total($id)
     {
-        global $pdo;
-        $sql = "select count(`id`) from `$table` ";
+
+        $sql = "select count(`id`) from `$this->table` ";
     
         if (is_array($id)) {
             foreach ($id as $col => $value) {
@@ -61,14 +62,14 @@ class DB{
             echo "錯誤:參數的資料型態比須是數字或陣列";
         }
         //echo 'find=>'.$sql;
-        $row = $pdo->query($sql)->fetchColumn();
+        $row = $this->pdo->query($sql)->fetchColumn();
         return $row;
     }
     
-    function find($table, $id)
+    function find( $id)
     {
-        global $pdo;
-        $sql = "select * from `$table` ";
+
+        $sql = "select * from `$this->table` ";
     
         if (is_array($id)) {
             foreach ($id as $col => $value) {
@@ -81,15 +82,28 @@ class DB{
             echo "錯誤:參數的資料型態比須是數字或陣列";
         }
         //echo 'find=>'.$sql;
-        $row = $pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
+        $row = $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
         return $row;
     }
     
-    function update($table, $id, $cols)
+    function save($array){
+        if(isset($array['id'])){
+            $this->update($array['id'],$array);
+        }else{
+            $sql = "insert into `$this->table` ";
+            $cols = "(`" . join("`,`", array_keys($array)) . "`)";
+            $vals = "('" . join("','", $array) . "')";
+        
+            $sql = $sql . $cols . " values " . $vals;
+        }
+        return $this->pdo->exec($sql);
+        
+    }
+    protected function update( $id, $cols)
     {
-        global $pdo;
+
     
-        $sql = "update `$table` set ";
+        $sql = "update `$this->table` set ";
     
         if (!empty($cols)) {
             foreach ($cols as $col => $value) {
@@ -100,40 +114,35 @@ class DB{
         }
     
         $sql .= join(",", $tmp);
-        $tmp = [];
-        if (is_array($id)) {
-            foreach ($id as $col => $value) {
-                $tmp[] = "`$col`='$value'";
-            }
-            $sql .= " where " . join(" && ", $tmp);
-        } else if (is_numeric($id)) {
-            $sql .= " where `id`='$id'";
-        } else {
-            echo "錯誤:參數的資料型態比須是數字或陣列";
-        }
+         $sql .= " where `id`={$cols['id']}";
+
         // echo $sql;
-        return $pdo->exec($sql);
+        // return $this->pdo->exec($sql);
     }
     
-    function insert($table, $values)
+    protected function insert($values)
     {
-        global $pdo;
+
     
-        $sql = "insert into `$table` ";
-        $cols = "(`" . join("`,`", array_keys($values)) . "`)";
-        $vals = "('" . join("','", $values) . "')";
+        // $sql = "insert into `$this->table` ";
+        // $cols = "(`" . join("`,`", array_keys($values)) . "`)";
+        // $vals = "('" . join("','", $values) . "')";
     
-        $sql = $sql . $cols . " values " . $vals;
+        // $sql = $sql . $cols . " values " . $vals;
     
         //echo $sql;
     
-        return $pdo->exec($sql);
+        // return $this->pdo->exec($sql);
     }
-    
-    function del($table, $id)
+        function q($sql){
+            return $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
+        }
+
+
+    function del( $id)
     {
-        global $pdo;
-        $sql = "delete from `$table` where ";
+     
+        $sql = "delete from `$this->table` where ";
     
         if (is_array($id)) {
             foreach ($id as $col => $value) {
@@ -147,7 +156,7 @@ class DB{
         }
         //echo $sql;
     
-        return $pdo->exec($sql);
+        return $this->pdo->exec($sql);
     }
     
     function dd($array)
@@ -160,4 +169,17 @@ class DB{
     
     
 
- 
+}
+
+
+
+
+
+
+
+
+$student=new DB('students');
+$rows=$student->all();
+// $rows=$student->find(20);
+// $rows=$student->total(20);
+$student->dd($rows);
