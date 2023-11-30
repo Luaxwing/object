@@ -211,8 +211,10 @@ function dd($array)
 }
 
 
+// 記得:這裡的table是輸入字串，不是欄位
+// 引入字串，字串才去帶`col`
 
-// 先定義User變數儲存資料庫class，便於利用在其他頁面
+// 先定義 變數儲存資料庫class，便於利用在其他頁面
 $student=new DB('students');
 $rows=$student->count();
 dd($rows);
