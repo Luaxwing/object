@@ -1,85 +1,104 @@
-<?php
+<?php 
 date_default_timezone_set("Asia/Taipei");
 session_start();
-
-class DB
-{
-
-    // 受保護的資料庫
+class DB{
+// 定義class函數 "資料庫" "PDO" "TABLE"
     protected $dsn = "mysql:host=localhost;charset=utf8;dbname=school";
     protected $pdo;
     protected $table;
-
-    // 便於管控要查找資料庫中的Table
+//$sql 放置MariaDB 的查找語句
+// 
+// 執行DB時 將自訂義的table 帶入 DB函數
+// PDO:PHP Data Objects_登入
     public function __construct($table)
     {
-        $this->table = $table;
-        $this->pdo = new PDO($this->dsn, 'root', '');
+        $this->table=$table;
+        $this->pdo=new PDO($this->dsn,'root','');
     }
-
-    // 將陣列以Data形式儲存至tmp
-    private function a2s($array)
+// 
+// 測試檢視資料表用
+    function all( $where = '', $other = '')
     {
-        foreach ($array as $col => $value) {
-            $tmp[] = "`$col`='$value'";
-        }
-        return $tmp;
-    }
-
-
-    function all($where = '', $other = '')
-    {
-        // global $pdo;
         $sql = "select * from `$this->table` ";
-
-        // 若table有定義且非空將執行下列程式
-        if (isset($this->table) && !empty($this->table)) {
-            // 如果有追加查找條件將會把where增加至sql語句之後
-            if (is_array($where)) {
-                if (!empty($where)) {
-                    $tmp = $this->a2s($where);
-                    $sql .= " where " . join(" && ", $tmp);
-                }
-
-            } else {
-                // 若無(預設為Null),則輸出為where(即空字串)
-                $sql .= " $where";
-            }
-            $sql .= $other;
-            //echo 'all=>'.$sql;
-            // $rows = $this->pdo->query($sql)->fetchColumn(PDO::FETCH_CLASS);
-            $rows = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-            return $rows;
-        } else {
-            echo "錯誤:沒有指定的資料表名稱";
-        }
+        $sql = $this->sql_all($sql,$where,$other);
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    
+        // if (isset($this->table) && !empty($this->table)) {
+    
+        //     if (is_array($where)) {
+    
+        //         if (!empty($where)) {
+        //             $tmp = $this->a2s($where);
+        //             $sql .= " where " . join(" && ", $tmp);
+        //         }
+        //     } else {
+        //         $sql .= " $where";
+        //     }
+    
+        //     $sql .= $other;
+        //     $rows = $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        //     return $rows;
+        // } else {
+        //     echo "錯誤:沒有指定的資料表名稱";
+        // }
     }
-
-
-    // *count*
-    function total($id)
+    // 
+    // 驗證指定資料欄位中的值是否有對應對象
+    function count( $where = '', $other = '')
     {
-
-        $sql = "select count(`id`) from `$this->table` ";
-
-        if (is_array($id)) {
-            $tmp = $this->a2s($id);
-            $sql .= " where " . join(" && ", $tmp);
-        } else if (is_numeric($id)) {
-            $sql .= " where `id`='$id'";
-        } else {
-            echo "錯誤:參數的資料型態比須是數字或陣列";
-        }
-        //echo 'find=>'.$sql;
-        $row = $this->pdo->query($sql)->fetchColumn();
-        return $row;
+        $sql = "select count(*) from `$this->table` ";
+        $sql = $this->sql_all($sql,$where,$other);
+        return $this->pdo->query($sql)->fetchColumn();
     }
 
+// 整合函示
+// $math=方法
+ function math($math,$col="*",$array="",$other=""){
+    // $result=$this->$math($col,$array,$other);
+    // return $result;
+    $sql = "select $math(`$col`) from `$this->table` ";
+    $sql = $this->sql_all($sql,$array,$other);
+    return $this->pdo->query($sql)->fetchColumn();
+}
+
+
+
+// SUM-計算table v col 中的 "數值"
+// 要指定欄位
+function sum( $col ,$where = '', $other = '')
+    {
+        $sql = "select sum(`$col`) from `$this->table` ";
+        $sql = $this->sql_all($sql,$where,$other);
+        return $this->pdo->query($sql)->fetchColumn();
+    }
+// 
+
+// max
+// 要指定欄位
+function max( $col,$where = '', $other = '')
+    {
+        $sql = "select max(`$col`) from `$this->table` ";
+        $sql = $this->sql_all($sql,$where,$other);
+        return $this->pdo->query($sql)->fetchColumn();;
+    }
+// 
+
+// min
+// 要指定欄位
+function min( $col,$where = '', $other = '')
+    {
+        $sql = "select min(`$col`) from `$this->table` ";
+        $sql = $this->sql_all($sql,$where,$other);
+        return $this->pdo->query($sql)->fetchColumn();;
+    }
+// 
+
+    // 
+    // 查找特定ID
     function find($id)
     {
-
         $sql = "select * from `$this->table` ";
-
+    
         if (is_array($id)) {
             $tmp = $this->a2s($id);
             $sql .= " where " . join(" && ", $tmp);
@@ -92,102 +111,121 @@ class DB
         $row = $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
         return $row;
     }
-
-    function save($array)
-    {
-        if (isset($array['id'])) {
-            $this->update($array['id'], $array);
-        } else {
+    // 
+    // 做儲存/更新用
+    function save($array){
+        // 驗證資料是否存在
+        // 若存在則更新內容
+        if(isset($array['id']))
+        {
+            $sql = "update `$this->table` set ";
+    
+            if (!empty($array)) {
+                $tmp = $this->a2s($array);
+            } else {
+                echo "錯誤:缺少要編輯的欄位陣列";
+            }
+        
+            $sql .= join(",", $tmp);
+            $sql .= " where `id`='{$array['id']}'";
+        }
+        // 
+        // 若不存在則新增一筆資料
+        else{
             $sql = "insert into `$this->table` ";
             $cols = "(`" . join("`,`", array_keys($array)) . "`)";
             $vals = "('" . join("','", $array) . "')";
-
+        
             $sql = $sql . $cols . " values " . $vals;
         }
+
         return $this->pdo->exec($sql);
-
     }
-    protected function update($id, $cols)
-    {
-
-
-        $sql = "update `$this->table` set ";
-
-        if (!empty($cols)) {
-            $tmp = $this->a2s($cols);
-        } else {
-            echo "錯誤:缺少要編輯的欄位陣列";
-        }
-
-        $sql .= join(",", $tmp);
-        $sql .= " where `id`={$cols['id']}";
-
-        // echo $sql;
-        // return $this->pdo->exec($sql);
-    }
-
-    protected function insert($values)
-    {
-
-
-        // $sql = "insert into `$this->table` ";
-        // $cols = "(`" . join("`,`", array_keys($values)) . "`)";
-        // $vals = "('" . join("','", $values) . "')";
-
-        // $sql = $sql . $cols . " values " . $vals;
-
-        //echo $sql;
-
-        // return $this->pdo->exec($sql);
-    }
-    function q($sql)
-    {
-        return $this->pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
-    }
-
-
+// 
+// 刪除資料
     function del($id)
     {
-
         $sql = "delete from `$this->table` where ";
-
-        if (is_array($id)) {
+    
+        if (is_array($id)) 
+        {
             $tmp = $this->a2s($id);
             $sql .= join(" && ", $tmp);
-        } else if (is_numeric($id)) {
+        } 
+        else if (is_numeric($id))
+         {
             $sql .= " `id`='$id'";
-        } else {
+        } 
+        else 
+        {
             echo "錯誤:參數的資料型態比須是數字或陣列";
         }
         //echo $sql;
-
+    
         return $this->pdo->exec($sql);
     }
+    // 
+    // 受不了重複的程式碼
+    function q($sql){
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
-    function dd($array)
-    {
-        echo "<pre>";
-        print_r($array);
-        echo "</pre>";
     }
+// 簡化上述重複程式，詳細見上列函式
+// array to sql
+    private function a2s($array){
+        foreach ($array as $col => $value) {
+            $tmp[] = "`$col`='$value'";
+        }
+        return $tmp;
+    }
+    //  
+    // 
+    private function sql_all($sql,$array,$other){
+        if (isset($this->table) && !empty($this->table)) {
+    
+            if (is_array($array)) {
+    
+                if (!empty($array)) {
+                    $tmp = $this->a2s($array);
+                    $sql .= " where " . join(" && ", $tmp);
+                }
+            } else {
+                $sql .= " $array";
+            }
+    
+            $sql .= $other;
+            //echo 'all=>'.$sql;
+            // $rows = $this->pdo->query($sql)->fetchColumn();
+            return $sql;
+        } else {
+            echo "錯誤:沒有指定的資料表名稱";
+        }
+    }
+}
 
-
-
-
+function dd($array)
+{
+    echo "<pre>";
+    print_r($array);
+    echo "</pre>";
 }
 
 
 
+// 先定義User變數儲存資料庫class，便於利用在其他頁面
+$student=new DB('students');
+$rows=$student->count();
+dd($rows);
+echo "<hr>";
+
+$Score=new DB('student_scores');
+$sum=$Score->sum('score');
+dd($sum);
+echo "<hr>";
+
+$result=$Score->math('count','score');
+dd($result);
+echo "<hr>";
 
 
-
-
-
-$student = new DB('students');
-$rows = $student->all();
-// $rows=$student->find(20);
-// $rows=$student->total(20);
-$student->dd($rows);
-
-
-
+?>
