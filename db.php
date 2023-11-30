@@ -51,7 +51,7 @@ class DB{
         return $this->pdo->query($sql)->fetchColumn();
     }
 
-// 整合函示
+// 整合函式
 // $math=方法
  function math($math,$col="*",$array="",$other=""){
     // $result=$this->$math($col,$array,$other);
