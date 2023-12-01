@@ -95,6 +95,7 @@ function min( $col,$where = '', $other = '')
 
     // 
     // 查找特定ID or 指定陣列
+    // 只會找到符合項目的"第一列"
     function find($id)
     {
         $sql = "select * from `$this->table` ";
