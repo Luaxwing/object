@@ -16,7 +16,7 @@ class DB{
         $this->pdo=new PDO($this->dsn,'root','');
     }
 // 
-// 測試檢視資料表用
+// 測試檢視資料表用 全部(空白) or 陣列 or 輸入條件句
     function all( $where = '', $other = '')
     {
         $sql = "select * from `$this->table` ";
@@ -94,7 +94,7 @@ function min( $col,$where = '', $other = '')
 // 
 
     // 
-    // 查找特定ID
+    // 查找特定ID or 指定陣列
     function find($id)
     {
         $sql = "select * from `$this->table` ";
